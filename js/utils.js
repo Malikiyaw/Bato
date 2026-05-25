@@ -138,6 +138,41 @@ BATO.Utils = {
     }
   },
 
+  generateLevelProps(scene){
+    if(scene.textures.exists('prop_jeepney')) return;
+    
+    // Jeepney
+    let g1 = scene.make.graphics({add:false});
+    g1.fillStyle(0xcc4444); g1.fillRect(0, 10, 100, 40);
+    g1.fillStyle(0xcccccc); g1.fillRect(10, 20, 20, 15); g1.fillRect(40, 20, 20, 15); g1.fillRect(70, 20, 20, 15);
+    g1.fillStyle(0x222222); g1.fillCircle(25, 50, 12); g1.fillCircle(75, 50, 12);
+    g1.generateTexture('prop_jeepney', 100, 60);
+    g1.destroy();
+
+    // Tricycle
+    let g2 = scene.make.graphics({add:false});
+    g2.fillStyle(0x4444cc); g2.fillRect(0, 15, 60, 30);
+    g2.fillStyle(0xcccccc); g2.fillRect(35, 5, 20, 20);
+    g2.fillStyle(0x222222); g2.fillCircle(15, 45, 8); g2.fillCircle(50, 45, 8);
+    g2.generateTexture('prop_tricycle', 60, 50);
+    g2.destroy();
+
+    // Lechon
+    let g3 = scene.make.graphics({add:false});
+    g3.fillStyle(0xaa5522); g3.fillEllipse(30, 20, 40, 20);
+    g3.fillStyle(0x222222); g3.fillRect(0, 20, 60, 2);
+    g3.generateTexture('prop_lechon', 60, 40);
+    g3.destroy();
+
+    // Filing Cabinet
+    let g4 = scene.make.graphics({add:false});
+    g4.fillStyle(0x888888); g4.fillRect(0, 0, 32, 64);
+    g4.fillStyle(0x666666); g4.fillRect(4, 4, 24, 16); g4.fillRect(4, 24, 24, 16); g4.fillRect(4, 44, 24, 16);
+    g4.fillStyle(0xcccccc); g4.fillRect(12, 10, 8, 4); g4.fillRect(12, 30, 8, 4); g4.fillRect(12, 50, 8, 4);
+    g4.generateTexture('prop_cabinet', 32, 64);
+    g4.destroy();
+  },
+
   generateBackground(scene, zone){
     if(scene.textures.exists('bg_'+zone)) return;
     let g=scene.make.graphics({add:false});

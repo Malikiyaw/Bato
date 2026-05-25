@@ -9,6 +9,7 @@ BATO.BootScene = class extends Phaser.Scene {
     BATO.Utils.generateBossSprites(this);
     BATO.Utils.generateProjectileSprites(this);
     BATO.Utils.generateUISprites(this);
+    BATO.Utils.generateLevelProps(this);
     for (let i = 0; i < 5; i++) BATO.Utils.generateBackground(this, i);
     this.scene.start('MenuScene');
   }
@@ -329,14 +330,76 @@ BATO.GameScene = class extends Phaser.Scene {
     let tileSize = 16;
     let levelW = 100;
     let groundY = 240;
+    this.groundY = groundY;
+    
+    // Base Ground
     for (let x = 0; x < levelW * tileSize; x += tileSize) {
       let g = this.platforms.create(x, groundY, null).setDisplaySize(tileSize, tileSize);
       g.body.updateFromGameObject();
       g.setVisible(false);
     }
-    for (let i = 0; i < 20; i++) {
+    
+    this.levelProps = this.physics.add.group();
+
+    if (this.currentZone === 0) { // Quiapo Chaos
+      for (let i = 0; i < 6; i++) {
+        let px = BATO.Utils.rand(10, levelW - 10) * tileSize;
+        let isJeep = Math.random() > 0.5;
+        let prop = this.physics.add.sprite(px, groundY - (isJeep ? 30 : 25), isJeep ? 'prop_jeepney' : 'prop_tricycle');
+        prop.body.setAllowGravity(false);
+        prop.body.setImmovable(true);
+        if (isJeep) {
+          prop.body.setVelocityX(Math.random() > 0.5 ? 50 : -50);
+          this.platforms.add(prop); // Jeepney roof as platform
+        } else {
+          this.platforms.add(prop);
+        }
+        this.levelProps.add(prop);
+      }
+    } else if (this.currentZone === 1) { // Davao Night Market
+      for (let i = 0; i < 8; i++) {
+        let px = BATO.Utils.rand(10, levelW - 10) * tileSize;
+        let lechon = this.physics.add.sprite(px, groundY - 20, 'prop_lechon');
+        lechon.body.setAllowGravity(false);
+        lechon.body.setImmovable(true);
+        lechon.hp = 20;
+        lechon.takeDamage = function(amt) { this.hp -= amt; if(this.hp <= 0) { BATO.AudioManager.playSfx('hit'); this.destroy(); } };
+        this.platforms.add(lechon);
+        this.levelProps.add(lechon);
+      }
+      for (let i = 0; i < 5; i++) {
+        let px = BATO.Utils.rand(10, levelW - 10) * tileSize;
+        let gas = this.add.circle(px, groundY - 40, 30, 0x44aa44, 0.4);
+        gas.setData('isGas', true);
+        this.levelProps.add(gas);
+      }
+    } else if (this.currentZone === 2) { // ICC Headquarters
+      for (let i = 0; i < 10; i++) {
+        let px = BATO.Utils.rand(10, levelW - 10) * tileSize;
+        let cab = this.physics.add.sprite(px, groundY - 32, 'prop_cabinet');
+        cab.body.setAllowGravity(false);
+        cab.body.setImmovable(true);
+        this.platforms.add(cab);
+        this.levelProps.add(cab);
+      }
+      for (let i = 0; i < 5; i++) { // Elevators
+        let px = BATO.Utils.rand(20, levelW - 10) * tileSize;
+        let py = groundY - BATO.Utils.rand(3, 8) * tileSize;
+        let el = this.physics.add.sprite(px, py, 'prop_cabinet').setDisplaySize(48, 8);
+        el.body.setAllowGravity(false);
+        el.body.setImmovable(true);
+        el.body.setVelocityY(BATO.Utils.pick([-30, 30]));
+        el.setData('elevator', true);
+        el.setData('baseY', py);
+        this.platforms.add(el);
+        this.levelProps.add(el);
+      }
+    }
+
+    // Generic random platforms
+    for (let i = 0; i < 10; i++) {
       let px = BATO.Utils.rand(1, levelW - 2) * tileSize;
-      let py = groundY - BATO.Utils.rand(2, 6) * tileSize;
+      let py = groundY - BATO.Utils.rand(3, 6) * tileSize;
       let pw = BATO.Utils.rand(3, 6) * tileSize;
       for (let x = px; x < px + pw; x += tileSize) {
         let p = this.platforms.create(x, py, null).setDisplaySize(tileSize, tileSize);
@@ -344,7 +407,6 @@ BATO.GameScene = class extends Phaser.Scene {
         p.setVisible(false);
       }
     }
-    this.groundY = groundY;
   }
 
   spawnPlayer() {
@@ -522,6 +584,24 @@ BATO.GameScene = class extends Phaser.Scene {
     this.handlePerkInput();
     if (this.player.update) this.player.update(time, delta);
     this.enemies.getChildren().forEach(e => { if (e.updateEnemy) e.updateEnemy(time, delta, this.player); });
+    
+    // Level Props logic
+    if (this.levelProps) {
+      this.levelProps.getChildren().forEach(p => {
+        if (!p.active) return;
+        if (p.getData('elevator')) {
+          let by = p.getData('baseY');
+          if (p.y < by - 50) p.body.setVelocityY(30);
+          else if (p.y > by + 50) p.body.setVelocityY(-30);
+        } else if (p.getData('isGas')) {
+          if (Math.abs(p.x - this.player.x) < 30) this.player.setData('slowed', true);
+        } else if (p.texture && p.texture.key === 'prop_jeepney') {
+          if (p.x < -100) p.x = 2000;
+          else if (p.x > 2000) p.x = -100;
+        }
+      });
+    }
+
     if (this.touchCtrl) this.touchCtrl.updateTouchInput(this);
     this.hud.update(this);
     this.checkStageComplete();
@@ -570,6 +650,8 @@ BATO.BossScene = class extends Phaser.Scene {
     for (let x = 0; x < 800; x += 16) { let g = this.platforms.create(x, 250, null).setDisplaySize(16, 16).setVisible(false); g.body.updateFromGameObject(); }
     this.bossSprite = this.add.sprite(400, 190, 'boss_' + bossData.id).setScale(1.5);
     this.physics.add.existing(this.bossSprite, true);
+    this.bossWeakpoints = this.physics.add.group();
+
     this.bossHp = bossData.totalHp;
     this.bossMaxHp = bossData.totalHp;
     if (this.character === 'sanbato' && BATO.Save.data.sanBatoUnlocked) {
@@ -588,7 +670,7 @@ BATO.BossScene = class extends Phaser.Scene {
     }
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.enemies, this.platforms);
-    this.physics.add.overlap(this.playerProjectiles, [this.bossSprite], this.onProjectileHitBoss, null, this);
+    this.physics.add.overlap(this.playerProjectiles, [this.bossSprite, this.bossWeakpoints], this.onProjectileHitBoss, null, this);
     this.physics.add.overlap(this.player, this.bossSprite, this.onPlayerTouchBoss, null, this);
     this.hud = Object.create(BATO.HUD);
     this.hud.create(this);
@@ -601,15 +683,53 @@ BATO.BossScene = class extends Phaser.Scene {
     this.add.rectangle(w / 2, 22, 200, 8, 0x440000).setDepth(100).setScrollFactor(0);
     this.bossHpBar = this.add.rectangle(w / 2 - 100, 22, 200, 8, 0xff4444).setOrigin(0, 0.5).setDepth(101).setScrollFactor(0);
     this.bossPhaseLabel = this.add.text(w / 2, 34, bossData.phases[0].name, { fontSize: '8px', color: '#ffaa00', fontFamily: 'monospace' }).setOrigin(0.5).setDepth(100);
+    
+    this.setupBossWeakpoints();
   }
 
-  onProjectileHitBoss(proj, boss) {
+  setupBossWeakpoints() {
+    this.bossWeakpoints.clear(true, true);
+    let wps = this.phaseWeakpoints[this.bossPhase];
+    if (!wps) return;
+    wps.forEach((wp, idx) => {
+      if (wp.currentHp <= 0) return;
+      let ox = (idx % 2 === 0 ? -40 : 40);
+      let oy = (idx < 2 ? -20 : 20);
+      let p = this.add.circle(this.bossSprite.x + ox, this.bossSprite.y + oy, 15, 0xffff00, 0.6);
+      this.physics.add.existing(p, true);
+      p.setData('wpData', wp);
+      p.setData('wpIndex', idx);
+      this.bossWeakpoints.add(p);
+    });
+  }
+
+  onProjectileHitBoss(proj, bossTarget) {
     if (!proj.active) return;
     let dmg = proj.getData('holy') ? 12 : 5;
-    this.bossHp -= dmg;
+    
+    if (bossTarget.getData && bossTarget.getData('wpData')) {
+      let wp = bossTarget.getData('wpData');
+      wp.currentHp -= dmg;
+      this.bossHp -= dmg;
+      bossTarget.setTint(0xff0000);
+      this.time.delayedCall(50, () => { if (bossTarget.active) bossTarget.clearTint(); });
+      if (wp.currentHp <= 0) {
+        bossTarget.destroy();
+        BATO.AudioManager.playSfx('hit');
+      }
+    } else {
+      let wps = this.phaseWeakpoints[this.bossPhase];
+      if (wps && wps.some(w => w.currentHp > 0)) {
+        // Boss is immune while weakpoints are up
+        proj.destroy();
+        return;
+      }
+      this.bossHp -= dmg;
+      this.bossSprite.setTint(0xffffff);
+      this.time.delayedCall(50, () => { if (this.bossSprite.active) this.bossSprite.clearTint(); });
+    }
+    
     proj.destroy();
-    this.bossSprite.setTint(0xffffff);
-    this.time.delayedCall(50, () => { if (this.bossSprite.active) this.bossSprite.clearTint(); });
     this.updateBossPhase();
   }
 
@@ -623,8 +743,18 @@ BATO.BossScene = class extends Phaser.Scene {
 
   updateBossPhase() {
     let pct = this.bossHp / this.bossMaxHp;
-    if (pct <= 0.66 && this.bossPhase === 0) { this.bossPhase = 1; if (this.bossData.phases[1]) this.bossPhaseLabel.setText(this.bossData.phases[1].name); }
-    if (pct <= 0.33 && this.bossPhase === 1) { this.bossPhase = 2; if (this.bossData.phases[2]) this.bossPhaseLabel.setText(this.bossData.phases[2].name); }
+    let newPhase = this.bossPhase;
+    if (pct <= 0.66 && this.bossPhase === 0) newPhase = 1;
+    if (pct <= 0.33 && this.bossPhase === 1) newPhase = 2;
+    
+    if (newPhase !== this.bossPhase) {
+      this.bossPhase = newPhase;
+      if (this.bossData.phases[newPhase]) {
+        this.bossPhaseLabel.setText(this.bossData.phases[newPhase].name);
+        this.setupBossWeakpoints();
+      }
+    }
+    
     if (this.bossData.interlude && pct <= this.bossData.interlude.hpTrigger / 100 && !this._interludeShown) {
       this._interludeShown = true;
       if (this.bossData.interlude.heal && this.player) this.player.hp = Math.min(this.player.hp + 50, this.player.maxHp);
@@ -640,27 +770,45 @@ BATO.BossScene = class extends Phaser.Scene {
     let atk = BATO.Utils.pick(attacks);
     switch (atk.type) {
       case 'shockwave':
+      case 'shockwave_combo':
       case 'wave':
         let wv = this.add.rectangle(this.bossSprite.x, this.bossSprite.y + 20, 200, 10, 0xff4444, 0.5);
         this.tweens.add({ targets: wv, x: this.player.x < this.bossSprite.x ? -100 : 900, duration: 600, onComplete: () => wv.destroy() });
-        if (Math.abs(this.player.x - this.bossSprite.x) < 100) this.player.takeDamage(atk.dmg); break;
+        if (Math.abs(this.player.x - this.bossSprite.x) < 150) this.player.takeDamage(atk.dmg); break;
       case 'charge':
-        this.tweens.add({ targets: this.bossSprite, x: this.player.x < this.bossSprite.x ? -50 : 850, duration: 800, onComplete: () => { if (this.player && Math.abs(this.player.x - this.bossSprite.x) < 50) this.player.takeDamage(atk.dmg); } }); break;
+      case 'charge_gore':
+      case 'push_crush':
+        this.tweens.add({ targets: this.bossSprite, x: this.player.x < this.bossSprite.x ? -50 : 850, duration: 800, yoyo: true, onComplete: () => { if (this.player && Math.abs(this.player.x - this.bossSprite.x) < 50) this.player.takeDamage(atk.dmg); } }); break;
       case 'spawn':
+      case 'spawn_drones':
         for (let i = 0; i < 3; i++) { let e = BATO.EnemyFactory.createEnemy(this, 'shadow_hooded', this.bossSprite.x + BATO.Utils.rand(-50, 50), 200); if (e) this.enemies.add(e); } break;
       case 'projectile':
+      case 'homing_verdict':
+      case 'light_beam':
+      case 'rapid':
         for (let i = 0; i < 5; i++) {
           let p = this.physics.add.sprite(this.bossSprite.x, this.bossSprite.y, 'proj_enemy').setTint(0xff6666);
           let angle = Math.atan2(this.player.y - this.bossSprite.y, this.player.x - this.bossSprite.x) + BATO.Utils.randf(-0.3, 0.3);
-          p.body.setVelocity(Math.cos(angle) * 100, Math.sin(angle) * 100);
+          p.body.setVelocity(Math.cos(angle) * (atk.type==='rapid'?200:100), Math.sin(angle) * (atk.type==='rapid'?200:100));
           this.enemyProjectiles.add(p);
           this.time.delayedCall(3000, () => { if (p.active) p.destroy(); });
         } break;
       case 'laser_slow':
+      case 'cross_laser':
         let laser = this.add.rectangle(this.player.x - 5, 0, 10, 270, 0xff0000, 0.3);
         this.time.delayedCall(500, () => { if (this.player) this.player.takeDamage(atk.dmg); laser.destroy(); }); break;
       case 'barrel_rain':
-        for (let i = 0; i < 6; i++) { let bx = this.bossSprite.x + BATO.Utils.rand(-100, 100); let barrel = this.add.circle(bx, -20, 10, 0x885522); this.tweens.add({ targets: barrel, y: 300, duration: 1000 + (i * 200), onComplete: () => { if (this.player && Math.abs(this.player.x - barrel.x) < 20) this.player.takeDamage(atk.dmg); barrel.destroy(); } }); } break;
+      case 'stun_grenade':
+        for (let i = 0; i < 6; i++) { let bx = this.bossSprite.x + BATO.Utils.rand(-100, 100); let barrel = this.add.circle(bx, -20, 10, 0x885522); this.tweens.add({ targets: barrel, y: 300, duration: 1000 + (i * 200), onComplete: () => { if (this.player && Math.abs(this.player.x - barrel.x) < 30) this.player.takeDamage(atk.dmg); barrel.destroy(); } }); } break;
+      case 'grab':
+      case 'ghost_grab':
+        if (Math.abs(this.player.x - this.bossSprite.x) < 150) { this.player.takeDamage(atk.dmg); this.player.body.setVelocityX(this.player.x > this.bossSprite.x ? -200 : 200); } break;
+      case 'instant_ko':
+      case 'screen_slam':
+        if (Math.abs(this.player.x - this.bossSprite.x) < 300) this.player.takeDamage(atk.dmg); break;
+      case 'march_skeletons':
+        let skel = this.add.rectangle(0, 200, 100, 40, 0x555555);
+        this.tweens.add({ targets: skel, x: 800, duration: 3000, onUpdate: () => { if (this.player && Math.abs(this.player.x - skel.x) < 50) this.player.takeDamage(atk.dmg); }, onComplete: () => skel.destroy() }); break;
       default: if (Math.abs(this.player.x - this.bossSprite.x) < 100) this.player.takeDamage(atk.dmg);
     }
   }
