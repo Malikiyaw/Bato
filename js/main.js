@@ -1,7 +1,13 @@
 // main.js – Phaser entry point
 
-import "./utils.js";
-import { BootScene } from "./scenes.js";
+import "./data.js";
+import "./audio.js";
+import "./systems.js";
+import "./entities.js";
+import "./ui.js";
+import "./perkOverlay.js";
+// No import for BootScene; it will be available globally via window.BootScene
+
 
 const config = {
   type: Phaser.AUTO,
@@ -19,4 +25,5 @@ const config = {
 
 window.addEventListener("load", () => {
   const game = new Phaser.Game(config);
+  console.log('Phaser game initialized');
 });
