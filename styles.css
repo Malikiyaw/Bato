@@ -1,0 +1,84 @@
+/* styles.css – Global styles and HUD glassmorphism */
+
+/* Reset & base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', Arial, sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* HUD container – glassmorphism */
+.hud-panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 200px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.hud-panel .label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+.hud-panel .bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.hud-panel .bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4e50, #f9d423);
+  transition: width 0.2s ease-out;
+}
+
+/* Coin & zone text styling */
+.hud-panel .text {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Responsive scaling for mobile */
+@media (max-width: 480px) {
+  .hud-panel {
+    width: 150px;
+    top: 5px;
+    left: 5px;
+    padding: 8px;
+  }
+}

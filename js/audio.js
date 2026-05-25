@@ -91,5 +91,53 @@ BATO.AudioManager = {
   stopMusic(){ this.musicPlaying = false; if(this.currentMusic){ clearInterval(this.currentMusic); this.currentMusic=null; } },
   setVolume(v){ this.masterVolume = BATO.Utils.clamp(v,0,1); },
   setSfxVol(v){ this.sfxVolume = BATO.Utils.clamp(v,0,1); },
-  setMusicVol(v){ this.musicVolume = BATO.Utils.clamp(v,0,1); }
+  setMusicVol(v){ this.musicVolume = BATO.Utils.clamp(v,0,1); },
+
+  // Placeholder music tracks (CC0 chiptune)
+  // Preload all music tracks for the given scene
+  preload() {
+    // Preload audio assets
+    BATO.AudioManager.preloadMusic(this);
+  },
+
+  preloadMusic(scene) {
+    for (const [name, path] of Object.entries(this.musicTracks)) {
+      scene.load.audio(name, path);
+    }
+  },
+
+  // Stop any currently playing HTMLAudioElement music
+  stopCurrentMusic() {
+    if (this._audioElement) {
+      this._audioElement.pause();
+      this._audioElement = null;
+    }
+    this.musicPlaying = false;
+  },
+  musicTracks: {
+    zone1: "audio/zone1.mp3",
+    zone2: "audio/zone2.mp3",
+    zone3: "audio/zone3.mp3",
+    boss: "audio/boss.mp3",
+    menu: "audio/menu.mp3"
+  },
+
+  // Play a music track by name using HTMLAudioElement
+  playMusicTrack(name) {
+    const url = this.musicTracks[name];
+    if (!url) { console.warn('Music track not found:', name); return; }
+    if (this._audioElement) { this._audioElement.pause(); }
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = this.musicVolume * this.masterVolume;
+    audio.play();
+    this._audioElement = audio;
+    this.musicPlaying = true;
+  },
+
+  // Stop any currently playing music track
+  stopMusicTrack() {
+    if (this._audioElement) { this._audioElement.pause(); this._audioElement = null; }
+    this.musicPlaying = false;
+  }
 };
