@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Luzon" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [0, 0], [10, 0], [10, 8], [5, 12], [0, 8], [0, 0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Visayas" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [12, -4], [16, -4], [16, -1], [14, 1], [12, -1], [12, -4]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Mindanao" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [5, -10], [12, -10], [12, -2], [5, -2], [5, -10]
+          ]
+        ]
+      }
+    }
+  ]
+}
