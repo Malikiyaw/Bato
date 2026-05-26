@@ -197,73 +197,30 @@ BATO.ACHIEVEMENTS = [
       light.position.set(5, 10, 7.5);
       scene.add(light);
 
-// Helper to create a 32x48 pixel art canvas texture
-function createPixelTexture(baseColor, isMap=false) {
+// Helper to create a 32x48 pixel art canvas texture for character sprites
+function createPixelTexture(baseColor) {
   const canvas = document.createElement('canvas');
   canvas.width = 32;
   canvas.height = 48;
   const ctx = canvas.getContext('2d');
   
-  if (isMap) {
-    // Generate a highly detailed 128x128 pixel art map of Luzon
-    canvas.width = 128;
-    canvas.height = 128;
-    ctx.fillStyle = '#1a3b5c'; // Deep blue ocean
-    ctx.fillRect(0,0,128,128);
-    
-    // Procedural terrain generation for Luzon outline
-    ctx.fillStyle = '#2d5a27'; // Dark green base
-    // Northern Luzon
-    ctx.fillRect(40, 10, 40, 30);
-    // Central Luzon
-    ctx.fillRect(35, 40, 50, 20);
-    // Southern Tagalog
-    ctx.fillRect(50, 60, 30, 20);
-    // Bicol Peninsula
-    ctx.fillRect(70, 75, 40, 30);
-    
-    // Add mountains (Sierra Madre & Cordillera)
-    ctx.fillStyle = '#1e3d1a';
-    ctx.fillRect(60, 15, 10, 45); // Sierra Madre
-    ctx.fillRect(45, 15, 12, 25); // Cordillera
-    
-    // Add coastal beaches
-    ctx.fillStyle = '#e8d2a5';
-    ctx.fillRect(35, 10, 5, 30); // West coast
-    ctx.fillRect(80, 10, 5, 30); // East coast
-    
-    // Add pixel cities (Manila, Baguio, etc.)
-    ctx.fillStyle = '#888888';
-    ctx.fillRect(50, 55, 8, 8); // Metro Manila
-    ctx.fillRect(48, 25, 4, 4); // Baguio
-    ctx.fillRect(85, 85, 6, 6); // Legazpi
-    
-    // Add some random noise for detail
-    for (let i = 0; i < 500; i++) {
-      const rx = Math.floor(Math.random() * 128);
-      const ry = Math.floor(Math.random() * 128);
-      ctx.fillStyle = 'rgba(0,0,0,0.1)';
-      ctx.fillRect(rx, ry, 1, 1);
-    }
-  } else {
-    // Draw a 32x48 pixel character sprite (Barong style for Bato)
-    ctx.fillStyle = '#00000000'; // transparent
-    ctx.fillRect(0,0,32,48);
-    
-    // Head
-    ctx.fillStyle = '#d2a679'; // skin
-    ctx.fillRect(10, 4, 12, 12);
-    // Eyes
-    ctx.fillStyle = '#000';
-    ctx.fillRect(13, 8, 2, 2);
-    ctx.fillRect(17, 8, 2, 2);
-    // Body (Barong)
-    ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
-    ctx.fillRect(8, 16, 16, 18);
-    // Pants
-    ctx.fillStyle = '#222';
-    ctx.fillRect(10, 34, 12, 14);
-  }
+  // Draw a 32x48 pixel character sprite
+  ctx.fillStyle = '#00000000'; // transparent
+  ctx.fillRect(0,0,32,48);
+  
+  // Head
+  ctx.fillStyle = '#d2a679'; // skin
+  ctx.fillRect(10, 4, 12, 12);
+  // Eyes
+  ctx.fillStyle = '#000';
+  ctx.fillRect(13, 8, 2, 2);
+  ctx.fillRect(17, 8, 2, 2);
+  // Body
+  ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
+  ctx.fillRect(8, 16, 16, 18);
+  // Pants
+  ctx.fillStyle = '#222';
+  ctx.fillRect(10, 34, 12, 14);
   
   const tex = new THREE.CanvasTexture(canvas);
   tex.magFilter = THREE.NearestFilter;
@@ -271,10 +228,19 @@ function createPixelTexture(baseColor, isMap=false) {
   return tex;
 }
 
-// 32x48 Pixel Luzon Map Plane
-const mapTex = createPixelTexture(0x2a4b31, true);
+// Load the real Luzon pixel-art map from file
+const mapLoader = new THREE.TextureLoader();
+const mapTex = mapLoader.load('assets/maps/luzon_map.png', (tex) => {
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  console.log('Luzon map loaded:', tex.image.width, 'x', tex.image.height);
+});
+mapTex.magFilter = THREE.NearestFilter;
+mapTex.minFilter = THREE.NearestFilter;
 const mapMat = new THREE.MeshBasicMaterial({ map: mapTex, transparent: true });
-const mapGeom = new THREE.PlaneGeometry(50, 75);
+// Map plane sized to match the image proportions (roughly 2:3 portrait)
+const mapGeom = new THREE.PlaneGeometry(80, 120);
 const mapMesh = new THREE.Mesh(mapGeom, mapMat);
 mapMesh.rotation.x = -Math.PI / 2;
 scene.add(mapMesh);
