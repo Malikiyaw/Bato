@@ -241,15 +241,46 @@ function createPixelTexture(baseColor, isMap=false) {
   const ctx = canvas.getContext('2d');
   
   if (isMap) {
-    // Draw a pixelated map of Luzon
-    ctx.fillStyle = '#00000000'; // transparent
-    ctx.fillRect(0,0,32,48);
-    ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
-    // Simple pixel outline of Luzon
-    ctx.fillRect(10, 5, 12, 10);
-    ctx.fillRect(8, 15, 10, 8);
-    ctx.fillRect(12, 23, 8, 10);
-    ctx.fillRect(15, 33, 5, 10);
+    // Generate a highly detailed 128x128 pixel art map of Luzon
+    canvas.width = 128;
+    canvas.height = 128;
+    ctx.fillStyle = '#1a3b5c'; // Deep blue ocean
+    ctx.fillRect(0,0,128,128);
+    
+    // Procedural terrain generation for Luzon outline
+    ctx.fillStyle = '#2d5a27'; // Dark green base
+    // Northern Luzon
+    ctx.fillRect(40, 10, 40, 30);
+    // Central Luzon
+    ctx.fillRect(35, 40, 50, 20);
+    // Southern Tagalog
+    ctx.fillRect(50, 60, 30, 20);
+    // Bicol Peninsula
+    ctx.fillRect(70, 75, 40, 30);
+    
+    // Add mountains (Sierra Madre & Cordillera)
+    ctx.fillStyle = '#1e3d1a';
+    ctx.fillRect(60, 15, 10, 45); // Sierra Madre
+    ctx.fillRect(45, 15, 12, 25); // Cordillera
+    
+    // Add coastal beaches
+    ctx.fillStyle = '#e8d2a5';
+    ctx.fillRect(35, 10, 5, 30); // West coast
+    ctx.fillRect(80, 10, 5, 30); // East coast
+    
+    // Add pixel cities (Manila, Baguio, etc.)
+    ctx.fillStyle = '#888888';
+    ctx.fillRect(50, 55, 8, 8); // Metro Manila
+    ctx.fillRect(48, 25, 4, 4); // Baguio
+    ctx.fillRect(85, 85, 6, 6); // Legazpi
+    
+    // Add some random noise for detail
+    for (let i = 0; i < 500; i++) {
+      const rx = Math.floor(Math.random() * 128);
+      const ry = Math.floor(Math.random() * 128);
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(rx, ry, 1, 1);
+    }
   } else {
     // Draw a 32x48 pixel character sprite (Barong style for Bato)
     ctx.fillStyle = '#00000000'; // transparent
@@ -285,15 +316,13 @@ mapMesh.rotation.x = -Math.PI / 2;
 scene.add(mapMesh);
 
 
-      // 32x48 Pixel Art Characters (Billboards)
+      // 32x48 Pixel Art Playable Characters
       const charColors = {
         "Kiko Pangilinan": 0xff5555,
-        "Risa Hontiveros": 0x55ff55,
-        "Leni Robredo": 0x5555ff,
-        "Bato Dela Rosa": 0xdddddd,
-        "San Bato": 0xffffaa
+        "Risa Hontiveros": 0xffc0cb, // Pink
+        "Leni Robredo": 0xff69b4
       };
-      let currentChar = "Bato Dela Rosa";
+      let currentChar = "Kiko Pangilinan";
       
       const charMat = new THREE.SpriteMaterial({ map: createPixelTexture(charColors[currentChar]) });
       let charMesh = new THREE.Sprite(charMat);
@@ -301,15 +330,27 @@ scene.add(mapMesh);
       charMesh.position.y = 1.125;
       scene.add(charMesh);
 
-      // NPCs - 32x48 Pixel Billboards
+      // NPCs - 32x48 Pixel Billboards (Protesters, Vendors, Kids)
       const npcGroup = new THREE.Group();
-      const npcColors = [0xffd700, 0xffa500, 0x00ffff];
-      for (let i = 0; i < 3; i++) {
-        const mat = new THREE.SpriteMaterial({ map: createPixelTexture(npcColors[i]) });
+      const npcTypes = [
+        { name: "Protester", color: 0xff0000 },
+        { name: "Fishball Vendor", color: 0xffaa00 },
+        { name: "Ice Cramble Vendor", color: 0xff00ff },
+        { name: "Water Vendor", color: 0x00aaff },
+        { name: "Kid", color: 0xaaff00 }
+      ];
+      // Generate massive crowd of 20 NPCs
+      for (let i = 0; i < 20; i++) {
+        const type = npcTypes[Math.floor(Math.random() * npcTypes.length)];
+        const mat = new THREE.SpriteMaterial({ map: createPixelTexture(type.color) });
         const npc = new THREE.Sprite(mat);
-        npc.scale.set(1.5, 2.25, 1);
-        npc.position.set(Math.random() * 30 - 15, 1.125, Math.random() * 30 - 15);
-        npc.userData = { direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize() };
+        if (type.name === "Kid") npc.scale.set(1.0, 1.5, 1); // smaller
+        else npc.scale.set(1.5, 2.25, 1);
+        npc.position.set(Math.random() * 40 - 20, 1.125, Math.random() * 40 - 20);
+        npc.userData = { 
+          name: type.name, 
+          direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize() 
+        };
         npcGroup.add(npc);
       }
       scene.add(npcGroup);
@@ -323,12 +364,26 @@ scene.add(mapMesh);
         });
       }
 
-      // Simple enemy - Pixel Billboard
-      const enemyMat = new THREE.SpriteMaterial({ map: createPixelTexture(0xff0000) });
-      const enemy = new THREE.Sprite(enemyMat);
-      enemy.scale.set(1.5, 2.25, 1);
-      enemy.position.set(5, 1.125, 0);
-      scene.add(enemy);
+      // Political Enemies & Buwaya - Pixel Billboards
+      const enemyGroup = new THREE.Group();
+      const enemyDefs = [
+        { name: "Zaldy Co", color: 0x880000, speed: 2, dmg: 10 },
+        { name: "Sara Duterte", color: 0x008800, speed: 2.5, dmg: 15 },
+        { name: "Bongbong Marcos", color: 0xcc0000, speed: 1.5, dmg: 12 },
+        { name: "Alan Peter Cayetano", color: 0x000088, speed: 2, dmg: 8 },
+        { name: "Sarah Discaya", color: 0x880088, speed: 2, dmg: 10 },
+        { name: "Buwaya", color: 0x004400, speed: 4, dmg: 20 } // Fast, high damage alligator
+      ];
+      enemyDefs.forEach((def, idx) => {
+        const mat = new THREE.SpriteMaterial({ map: createPixelTexture(def.color) });
+        const enemy = new THREE.Sprite(mat);
+        if (def.name === "Buwaya") enemy.scale.set(2.5, 1.5, 1); // long, short alligator shape
+        else enemy.scale.set(1.5, 2.25, 1);
+        enemy.position.set(Math.cos(idx) * 10, 1.125, Math.sin(idx) * 10);
+        enemy.userData = def;
+        enemyGroup.add(enemy);
+      });
+      scene.add(enemyGroup);
 
       // Survival metrics (SenateRush + Bato)
       let health = 100;
@@ -397,12 +452,12 @@ scene.add(mapMesh);
       extraNpcGroup.add(figure);
       scene.add(extraNpcGroup);
 
-      // Item definitions (base items + additional items)
+      // Survival Items (Food, Drink, Megaphones, First Aid)
       const itemData = [
-        { name: 'Food', color: 0xffaa00, position: new THREE.Vector3(2, 0.5, -3) },
-        { name: 'Medicine', color: 0x00aaff, position: new THREE.Vector3(-4, 0.5, 1) },
-        { name: 'Leaflet', color: 0xffff00, position: new THREE.Vector3(0, 0.5, -6) },
-        { name: 'Camera', color: 0x888888, position: new THREE.Vector3(3, 0.5, 2) },
+        { name: 'Mineral Water', color: 0x00aaff, position: new THREE.Vector3(2, 0.5, -3) },
+        { name: 'Fishball', color: 0xffaa00, position: new THREE.Vector3(-4, 0.5, 1) },
+        { name: 'Ice Cramble', color: 0xff00ff, position: new THREE.Vector3(0, 0.5, -6) },
+        { name: 'Megaphone', color: 0xcccccc, position: new THREE.Vector3(3, 0.5, 2) },
         { name: 'FirstAid', color: 0xff0000, position: new THREE.Vector3(-2, 0.5, 4) }
       ];
 
@@ -456,24 +511,24 @@ scene.add(mapMesh);
         }
       });
 
-      // Enemy AI: simple chase behavior
-      let enemyState = 'idle';
+      // Enemy AI: chase behavior for all political enemies & Buwaya
       function updateEnemy(delta) {
-        const distance = charMesh.position.distanceTo(enemy.position);
-        if (distance < 0.5) {
-          health = Math.max(0, health - 10);
-          updateUI();
-          // Reset enemy position
-          enemy.position.set(5, 0.8, 0);
-        } else if (distance < 6) {
-          enemyState = 'chase';
-        } else {
-          enemyState = 'idle';
-        }
-        if (enemyState === 'chase') {
-          const dir = new THREE.Vector3().subVectors(charMesh.position, enemy.position).normalize();
-          enemy.position.add(dir.multiplyScalar(delta * 2));
-        }
+        enemyGroup.children.forEach(enemy => {
+          const stats = enemy.userData;
+          const distance = charMesh.position.distanceTo(enemy.position);
+          
+          if (distance < 0.5) {
+            health = Math.max(0, health - stats.dmg);
+            updateUI();
+            // Knockback effect
+            const knockback = new THREE.Vector3().subVectors(charMesh.position, enemy.position).normalize().multiplyScalar(-3);
+            enemy.position.add(knockback);
+          } else if (distance < 8) {
+            // Chase
+            const dir = new THREE.Vector3().subVectors(charMesh.position, enemy.position).normalize();
+            enemy.position.add(dir.multiplyScalar(delta * stats.speed));
+          }
+        });
       }
 
       // GUI for character selection
@@ -497,6 +552,7 @@ scene.add(mapMesh);
         requestAnimationFrame(animate);
         const delta = renderer.info.render.frame * 0.016; // approx seconds per frame
         updateEnemy(delta);
+        updateNPCs(delta);
         renderer.render(scene, camera);
       }
       animate();
