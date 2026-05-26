@@ -233,54 +233,82 @@ BATO.ACHIEVEMENTS = [
       light.position.set(5, 10, 7.5);
       scene.add(light);
 
-// Load Philippines map (simple GeoJSON) and extrude polygons
-function loadPhilippinesMap() {
-  fetch('public/assets/philippines.geojson')
-    .then(res => res.json())
-    .then(data => {
-      const material = new THREE.MeshStandardMaterial({ color: 0x2a4b31 });
-      data.features.forEach(feat => {
-        const coords = feat.geometry.coordinates[0]; // assume simple polygon
-        const shape = new THREE.Shape();
-        coords.forEach((pt, idx) => {
-          const x = pt[0];
-          const z = pt[1];
-          if (idx === 0) shape.moveTo(x, z);
-          else shape.lineTo(x, z);
-        });
-        const extrudeSettings = { depth: Math.random() * 3 + 0.5, bevelEnabled: false };
-        const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.rotation.x = -Math.PI / 2; // make it lie on XZ plane
-        scene.add(mesh);
-      });
-    })
-    .catch(err => console.error('Failed to load map', err));
+// Helper to create a 32x48 pixel art canvas texture
+function createPixelTexture(baseColor, isMap=false) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 48;
+  const ctx = canvas.getContext('2d');
+  
+  if (isMap) {
+    // Draw a pixelated map of Luzon
+    ctx.fillStyle = '#00000000'; // transparent
+    ctx.fillRect(0,0,32,48);
+    ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
+    // Simple pixel outline of Luzon
+    ctx.fillRect(10, 5, 12, 10);
+    ctx.fillRect(8, 15, 10, 8);
+    ctx.fillRect(12, 23, 8, 10);
+    ctx.fillRect(15, 33, 5, 10);
+  } else {
+    // Draw a 32x48 pixel character sprite (Barong style for Bato)
+    ctx.fillStyle = '#00000000'; // transparent
+    ctx.fillRect(0,0,32,48);
+    
+    // Head
+    ctx.fillStyle = '#d2a679'; // skin
+    ctx.fillRect(10, 4, 12, 12);
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(13, 8, 2, 2);
+    ctx.fillRect(17, 8, 2, 2);
+    // Body (Barong)
+    ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
+    ctx.fillRect(8, 16, 16, 18);
+    // Pants
+    ctx.fillStyle = '#222';
+    ctx.fillRect(10, 34, 12, 14);
+  }
+  
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  return tex;
 }
-loadPhilippinesMap();
 
-      // Placeholder characters – colored voxel cubes
+// 32x48 Pixel Luzon Map Plane
+const mapTex = createPixelTexture(0x2a4b31, true);
+const mapMat = new THREE.MeshBasicMaterial({ map: mapTex, transparent: true });
+const mapGeom = new THREE.PlaneGeometry(50, 75);
+const mapMesh = new THREE.Mesh(mapGeom, mapMat);
+mapMesh.rotation.x = -Math.PI / 2;
+scene.add(mapMesh);
+
+
+      // 32x48 Pixel Art Characters (Billboards)
       const charColors = {
         "Kiko Pangilinan": 0xff5555,
         "Risa Hontiveros": 0x55ff55,
         "Leni Robredo": 0x5555ff,
-        "Bato Dela Rosa": 0x884400,
+        "Bato Dela Rosa": 0xdddddd,
         "San Bato": 0xffffaa
       };
       let currentChar = "Bato Dela Rosa";
-      const charGeom = new THREE.BoxGeometry(1, 2, 1);
-      let charMesh = new THREE.Mesh(charGeom, new THREE.MeshStandardMaterial({ color: charColors[currentChar] }));
-      charMesh.position.y = 1;
+      
+      const charMat = new THREE.SpriteMaterial({ map: createPixelTexture(charColors[currentChar]) });
+      let charMesh = new THREE.Sprite(charMat);
+      charMesh.scale.set(1.5, 2.25, 1); // Maintain 32x48 aspect ratio roughly (2:3)
+      charMesh.position.y = 1.125;
       scene.add(charMesh);
 
-      // NPCs placeholder – simple wandering vendors
+      // NPCs - 32x48 Pixel Billboards
       const npcGroup = new THREE.Group();
       const npcColors = [0xffd700, 0xffa500, 0x00ffff];
       for (let i = 0; i < 3; i++) {
-        const npcGeom = new THREE.BoxGeometry(0.8, 1.6, 0.8);
-        const npcMat = new THREE.MeshStandardMaterial({ color: npcColors[i] });
-        const npc = new THREE.Mesh(npcGeom, npcMat);
-        npc.position.set(Math.random() * 30 - 15, 0.8, Math.random() * 30 - 15);
+        const mat = new THREE.SpriteMaterial({ map: createPixelTexture(npcColors[i]) });
+        const npc = new THREE.Sprite(mat);
+        npc.scale.set(1.5, 2.25, 1);
+        npc.position.set(Math.random() * 30 - 15, 1.125, Math.random() * 30 - 15);
         npc.userData = { direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize() };
         npcGroup.add(npc);
       }
@@ -295,11 +323,11 @@ loadPhilippinesMap();
         });
       }
 
-      // Simple enemy placeholder (sphere)
-      const enemyGeom = new THREE.SphereGeometry(0.8, 16, 16);
-      const enemyMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
-      const enemy = new THREE.Mesh(enemyGeom, enemyMat);
-      enemy.position.set(5, 0.8, 0);
+      // Simple enemy - Pixel Billboard
+      const enemyMat = new THREE.SpriteMaterial({ map: createPixelTexture(0xff0000) });
+      const enemy = new THREE.Sprite(enemyMat);
+      enemy.scale.set(1.5, 2.25, 1);
+      enemy.position.set(5, 1.125, 0);
       scene.add(enemy);
 
       // Survival metrics (SenateRush + Bato)
@@ -378,17 +406,34 @@ loadPhilippinesMap();
         { name: 'FirstAid', color: 0xff0000, position: new THREE.Vector3(-2, 0.5, 4) }
       ];
 
-      // Simple item system
+      // Simple item system - Pixel Sprites (16x16 representation)
       const inventory = [];
       const invSpan = document.getElementById('inv-items');
       function updateInventoryUI() {
         invSpan.textContent = inventory.join(', ');
       }
+      
+      function createItemTexture(color) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#00000000';
+        ctx.fillRect(0,0,16,16);
+        ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+        ctx.fillRect(4,4,8,8);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        return tex;
+      }
+      
       itemData.forEach(data => {
-        const geom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const mat = new THREE.MeshStandardMaterial({ color: data.color });
-        const mesh = new THREE.Mesh(geom, mat);
+        const mat = new THREE.SpriteMaterial({ map: createItemTexture(data.color) });
+        const mesh = new THREE.Sprite(mat);
+        mesh.scale.set(0.75, 0.75, 1);
         mesh.position.copy(data.position);
+        mesh.position.y = 0.375;
         mesh.userData.itemName = data.name;
         scene.add(mesh);
       });
@@ -436,7 +481,8 @@ loadPhilippinesMap();
       const params = { character: currentChar };
       gui.add(params, "character", Object.keys(charColors)).name("Playable Character").onChange(value => {
         currentChar = value;
-        charMesh.material.color.setHex(charColors[value]);
+        charMesh.material.map = createPixelTexture(charColors[value]);
+        charMesh.material.needsUpdate = true;
       });
 
       // Resize handling
@@ -450,8 +496,6 @@ loadPhilippinesMap();
       function animate() {
         requestAnimationFrame(animate);
         const delta = renderer.info.render.frame * 0.016; // approx seconds per frame
-        charMesh.rotation.y += 0.01;
-        enemy.rotation.y += 0.005;
         updateEnemy(delta);
         renderer.render(scene, camera);
       }
