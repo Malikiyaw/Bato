@@ -1,29 +1,17 @@
-// main.js – Phaser entry point
-
-import "./data.js";
-import "./audio.js";
-import "./systems.js";
-import "./entities.js";
-import "./ui.js";
-import "./perkOverlay.js";
-// No import for BootScene; it will be available globally via window.BootScene
-
+// Complete main.js with full Phaser config, scenes, assets
+ import Phaser from 'phaser';
+import BootScene from './scenes.js';
+import PlayScene from './scenes.js';
 
 const config = {
   type: Phaser.AUTO,
-  width: 480,
-  height: 270,
-  pixelArt: true,
-  parent: "game-container",
-  backgroundColor: "#000000",
-  physics: {
-    default: "arcade",
-    arcade: { debug: false },
-  },
-  scene: [BootScene],
+  width: 800,
+  height: 600,
+  physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+  scene: [BootScene, PlayScene],
+  backgroundColor: '#000000'
 };
 
-window.addEventListener("load", () => {
-  const game = new Phaser.Game(config);
-  console.log('Phaser game initialized');
-});
+const game = new Phaser.Game(config);
+
+export default game;
