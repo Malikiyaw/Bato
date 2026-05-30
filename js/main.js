@@ -1,6 +1,6 @@
 // Fixed main.js with proper named imports and full config
  import Phaser from 'phaser';
-import { BootScene, PlayScene } from './scenes.js';
+import { BootScene, MenuScene, PlayScene, EndScene } from './scenes.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -9,11 +9,11 @@ const config = {
   physics: { 
     default: 'arcade', 
     arcade: { 
-      gravity: { y: 300 }, 
+      gravity: { y: 0 },
       debug: false 
     } 
   },
-  scene: [BootScene, PlayScene],
+  scene: [BootScene, MenuScene, PlayScene, EndScene],
   backgroundColor: '#111111',
   parent: 'game'
 };

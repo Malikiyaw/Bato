@@ -1,33 +1,45 @@
-// Full entities.js with enemies, bosses, animations
+import Phaser from 'phaser';
+
 class Enemy extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, type) {
-    super(scene, x, y, type);
+  constructor(scene, x, y, texture = 'enemy', opts = {}) {
+    super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.health = 50;
-    this.speed = 150;
 
-    // Animations for enemy
-    scene.anims.create({ key: `${type}idle`, frames: scene.anims.generateFrameNumbers(type, { start: 0, end: 3 }), frameRate: 10, repeat: -1 });
-    this.play(`${type}idle`);
+    this.maxHp = opts.maxHp ?? 30;
+    this.hp = this.maxHp;
+    this.speed = opts.speed ?? 120;
+    this.damage = opts.damage ?? 10;
+
+    this.setCollideWorldBounds(true);
+    this.setImmovable(false);
+  }
+
+  takeDamage(amount) {
+    this.hp -= amount;
+    if (this.hp <= 0) this.die();
+  }
+
+  die() {
+    if (!this.active) return;
+    this.destroy();
   }
 
   update(player) {
+    if (!player?.active) return;
     this.scene.physics.moveToObject(this, player, this.speed);
   }
 }
 
 class Boss extends Enemy {
   constructor(scene, x, y) {
-    super(scene, x, y, 'boss');
-    this.health = 500;
+    super(scene, x, y, 'boss', { maxHp: 150, speed: 90, damage: 20 });
     this.phase = 1;
   }
 
   update(player) {
     super.update(player);
-    // Phase logic
-    if (this.health < 250 && this.phase === 1) this.phase = 2;
+    if (this.hp < this.maxHp * 0.5 && this.phase === 1) this.phase = 2;
   }
 }
 
